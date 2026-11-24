@@ -20,6 +20,7 @@ estructura:
 import os
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt 
 
 #seteamos directorio en dónde está la carpeta "climatologia-sequia" y entramos
 os.getcwd()
@@ -71,10 +72,92 @@ def guardar_resultados(df, nombre_salida, outdir="resultados"):
     """
     
     csv_ruta = f"{outdir}/{nombre_salida}"
+    os.makedirs(outdir, exist_ok=True)
     df.to_csv(csv_ruta, index=False, sep=";", decimal=",")
     return csv_ruta
+
+#calculo de un dato por año a partir de la tabla mensual
+def serie_anual(df,
+                meses=(1, 2, 3, 4),
+                col="TME",
+                agregacion="promedio"):
+    """toma la tabla mensual (anio, mes, variable), se queda solo con los meses
+    de la tupla 'meses' y devuelve un valor por año. 'agregacion' puede ser
+    'promedio' o 'acumulado' (suma). si a un año le falta algún mes o tiene
+    un mes sin dato, el valor de ese año queda en NaN."""
+    
+    #me quedo solo con los meses que pedí
+    sel = df[df["mes"].isin(meses)]
+    g = sel.groupby("anio")[col]
+    
+    if agregacion == "promedio":
+        valor = g.mean()
+    elif agregacion == "acumulado":
+        valor = g.sum(min_count=1)
+    else:
+        raise ValueError("agregacion tiene que ser 'promedio' o 'acumulado'")
+    
+    #si no están todos los meses con dato, el año no vale
+    valor = valor.where(g.count() == len(meses))
+    
+    anual = valor.reset_index()
+    anual.columns = ["anio", f"{col}_{agregacion}"]
+    return anual
+
+def graficar_serie(df,
+                   nombre_salida,
+                   col=None,
+                   titulo="",
+                   ylabel="",
+                   color="steelblue",
+                   outdir="resultados"):
+    """toma el df anual (columnas anio y la variable) y guarda un gráfico de la
+    serie con su línea de tendencia en resultados/series_temporales.
+    nombre_salida va con extensión, por ejemplo "posadas_tme_anual.png".
+    si no paso 'col', agarra la última columna del df.
+    devuelve un diccionario con r, pendiente, n y la ruta donde guardó."""
+    
+    #si no le digo qué columna, usa la última (la variable de la serie)
+    if col is None:
+        col = df.columns[-1]
+    
+    #creo la carpeta si no existe
+    carpeta = f"{outdir}/series_temporales"
+    os.makedirs(carpeta, exist_ok=True)
+    
+    x = df["anio"].to_numpy()
+    y = df[col].to_numpy(dtype=float)
+    
+    #solo los años con dato para la tendencia (~ invierte los nan)
+    ok = ~np.isnan(y)
+    if ok.sum() < 3:
+        raise ValueError("hay menos de 3 años con dato, no alcanza para una tendencia")
+    
+    pendiente, ordenada = np.polyfit(x[ok], y[ok], 1)
+    r = np.corrcoef(x[ok], y[ok])[0, 1]
+    
+    #grafico: serie con huecos donde hay nan, y la recta de tendencia
+    plt.figure(figsize=(10, 4))
+    plt.plot(x, y, color=color, marker="o")
+    plt.plot(x, pendiente * x + ordenada, color="black", linestyle="--",
+             label=f"tendencia: {pendiente:.3f} por año (r = {r:.2f})")
+    plt.title(titulo)
+    plt.xlabel("Año")
+    plt.ylabel(ylabel)
+    plt.xticks(range(int(x.min()), int(x.max()) + 1, 5))
+    plt.legend()
+    plt.tight_layout()
+    
+    ruta = f"{carpeta}/{nombre_salida}"
+    plt.savefig(ruta, dpi=150)
+    plt.close()
+    return {"r": r, "pendiente": pendiente, "n": int(ok.sum()), "ruta": ruta}
 
 #prueba con datos de posadas
 df_posadas = cargar_datos("posadas.txt")
 tme_posadas = calculo_tme(df_posadas,5)
 guardar_resultados(tme_posadas, "posadas_tme.csv")
+tme_anual = serie_anual(tme_posadas)
+res = graficar_serie(tme_anual, "posadas_tme_anual.png",
+                     titulo="TME promedio ene-abr - Posadas",
+                     ylabel="TME (°C)")
