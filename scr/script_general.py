@@ -15,6 +15,7 @@ estructura:
         data            #datos de estaciones
         resultados      #donde se guardan los resultados
         scr             #script
+        mas             #ideas de utilización
 """
 
 import os
@@ -58,13 +59,17 @@ def calculo_tme(df,
     TME = TME.reset_index()
     TME.columns = ["anio", "mes", "TME"]
     return TME
+
 #espacio para la variable pp
+#def
 
 #union de dataframe para trabajar cómodamente
+#def
 
 #guardo los datos
 def guardar_resultados(df, nombre_salida, outdir="resultados"):
-    """Esta función guarda un DataFrame como CSV en la carpeta de resultados.
+    """
+    Esta función guarda un DataFrame como CSV en la carpeta de resultados.
     Como salida guarda la ruta en la que está guardado esta tabla para un posible
     uso en el futuro. En una próxima actualización se le pueden agregar parámetros
     de separacion para guardar en distinto formatos.
@@ -77,14 +82,13 @@ def guardar_resultados(df, nombre_salida, outdir="resultados"):
     return csv_ruta
 
 #calculo de un dato por año a partir de la tabla mensual
-def serie_anual(df,
-                meses=(1, 2, 3, 4),
-                col="TME",
-                agregacion="promedio"):
-    """toma la tabla mensual (anio, mes, variable), se queda solo con los meses
+def serie_anual(df, meses=(1, 2, 3, 4), col="TME", agregacion="promedio"):
+    """
+    toma la tabla mensual (anio, mes, variable), se queda solo con los meses
     de la tupla 'meses' y devuelve un valor por año. 'agregacion' puede ser
     'promedio' o 'acumulado' (suma). si a un año le falta algún mes o tiene
-    un mes sin dato, el valor de ese año queda en NaN."""
+    un mes sin dato, el valor de ese año queda en NaN.
+    """
     
     #me quedo solo con los meses que pedí
     sel = df[df["mes"].isin(meses)]
@@ -104,18 +108,16 @@ def serie_anual(df,
     anual.columns = ["anio", f"{col}_{agregacion}"]
     return anual
 
-def graficar_serie(df,
-                   nombre_salida,
-                   col=None,
-                   titulo="",
-                   ylabel="",
-                   color="steelblue",
-                   outdir="resultados"):
-    """toma el df anual (columnas anio y la variable) y guarda un gráfico de la
+#funcion que grafica una serie con regresión lineal
+def graficar_serie(df, nombre_salida, col=None, titulo="", ylabel="",
+                   color="steelblue", outdir="resultados"):
+    """
+    toma el df anual (columnas anio y la variable) y guarda un gráfico de la
     serie con su línea de tendencia en resultados/series_temporales.
     nombre_salida va con extensión, por ejemplo "posadas_tme_anual.png".
     si no paso 'col', agarra la última columna del df.
-    devuelve un diccionario con r, pendiente, n y la ruta donde guardó."""
+    devuelve un diccionario con r, pendiente, n y la ruta donde guardó.
+    """
     
     #si no le digo qué columna, usa la última (la variable de la serie)
     if col is None:
@@ -153,11 +155,32 @@ def graficar_serie(df,
     plt.close()
     return {"r": r, "pendiente": pendiente, "n": int(ok.sum()), "ruta": ruta}
 
+#muestra los dias con los que se calculó la tme de un año
+def dias_de_la_tme(df, df1, anio, meses=(1, 2, 3, 4), n=5, col_tme="TME_promedio"):
+    """
+    devuelve los 'n' días más calientes de cada mes de la tupla 'meses'
+    para el año 'anio' (los mismos con los que se calculó la tme). el año se
+    elige mirando el gráfico de la serie. 'meses' y 'n' tienen que ser los
+    mismos que usé para armar la serie. el df diario necesita las columnas
+    anio, mes, dia, tmax.
+    """
+    
+    if anio not in df1["anio"].values:
+        raise ValueError(f"el año {anio} no está en la serie")
+    
+    #ese año y esos meses, ordenados de mayor a menor, n por mes
+    sel = df[(df["anio"] == anio) & (df["mes"].isin(meses))]
+    dias = sel.sort_values("tmax", ascending=False).groupby("mes").head(n)
+    dias = dias[["anio", "mes", "dia", "tmax"]].sort_values(["mes", "tmax"], ascending=[True, False])
+    
+    return dias
+
 #prueba con datos de posadas
-df_posadas = cargar_datos("posadas.txt")
-tme_posadas = calculo_tme(df_posadas,5)
-guardar_resultados(tme_posadas, "posadas_tme.csv")
-tme_anual = serie_anual(tme_posadas)
-res = graficar_serie(tme_anual, "posadas_tme_anual.png",
+df_posadas = cargar_datos("posadas-aereo.txt")                  #datos
+tme_posadas = calculo_tme(df_posadas,5)                         #tme
+guardar_resultados(tme_posadas, "posadas_tme.csv")              #guardo csv
+tme_anual = serie_anual(tme_posadas)                            #serie temporal
+res = graficar_serie(tme_anual, "posadas_tme_anual.png",        #gráfico
                      titulo="TME promedio ene-abr - Posadas",
                      ylabel="TME (°C)")
+dias_2012 = dias_de_la_tme(df_posadas, tme_anual, 2012)         #dias de tme 2012
