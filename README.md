@@ -3,7 +3,7 @@
 Herramientas en Python para procesar series diarias de estaciones meteorológicas y calcular indicadores 
 climatológicos extremos mensuales. El proyecto está diseñado para trabajar con datos de distintas estaciones
  y forma parte de un trabajo de análisis climatológico orientado al estudio de condiciones asociadas a 
-sequías e incendios.
+sequías y condiciones que favorecen a los incendios.
 
 ## Objetivo
 
@@ -40,10 +40,16 @@ que no contengan fechas duplicadas y que se hayan revisado los valores atípicos
 ```text
 climatologia-sequias/
 ├── data/
-│   └── posadas.txt
+│   └── posadas-aereo.txt
 ├── resultados/
+    └── series temporales
+         └── posadas_tme_anual
+    └── posadas_tme
 └── src/
     └── script_general.py
+└── mas/
+    └── readme.txt
+    └── posadas-2012
 ```
 
 - **`data/`**: contiene los archivos de datos diarios de las estaciones meteorológicas. Se incluye un archivo de 
@@ -51,12 +57,7 @@ ejemplo correspondiente a Posadas.
 - **`src/`**: contiene `script_general.py`, con las funciones para cargar los datos, calcular la TME y guardar 
 los resultados.
 - **`resultados/`**: directorio de salida donde se guardan los archivos CSV generados por el análisis.
-
-## Requisitos
-
-- Python 3.
-- [pandas](https://pandas.pydata.org/) para la lectura, manipulación y agrupamiento de los datos.
-- [NumPy](https://numpy.org/) como dependencia del entorno de trabajo.
+- **`mas/`**: directorio información extra, actualmente tiene una posible salida del análisis.
 
 ## Formato de los datos de entrada
 
@@ -82,8 +83,7 @@ definirse y verificarse antes de utilizar los resultados en análisis climatoló
 2. Instalar las dependencias necesarias.
 3. Colocar los archivos de datos en la carpeta `data/`.
 4. Abrir `src/script_general.py` y configurar la variable `dir0` con la ruta local de la carpeta raíz del proyecto.
-5. Verificar que exista la carpeta `resultados/`.
-6. Ejecutar el script.
+5. Ejecutar el script.
 
 El archivo incluye un ejemplo de uso con los datos de Posadas y las funciones implementadas. Al ejecutarlo, se genera 
 el archivo `posadas_tme.csv` en la carpeta `resultados/`.
@@ -92,11 +92,7 @@ El CSV se exporta con punto y coma como separador de campos y coma como separado
 
 ### Funciones disponibles
 
-- **`cargar_datos()`**: lee un archivo de datos diarios y permite configurar la ruta, el separador y los nombres 
-de las columnas de fecha.
-- **`calculo_tme()`**: calcula la TME para cada combinación de año y mes. El parámetro `n` permite definir cuántos 
-valores máximos se utilizan en el promedio.
-- **`guardar_resultados()`**: exporta el DataFrame resultante a un archivo CSV y devuelve la ruta del archivo generado.
+varias y actualizándose constantemente
 
 ## Fuente de los datos y licencias
 
@@ -124,9 +120,7 @@ Las próximas etapas previstas incluyen:
 
 - Incorporar el procesamiento de datos de precipitación.
 - Implementar controles de calidad y criterios de completitud de las series.
-- Calcular percentiles para establecer umbrales climatológicos de temperaturas extremas.
-- Identificar los valores de TME que superen los umbrales definidos.
-- Generar gráficos para visualizar y analizar los resultados.
+- Generar gráficos para visualizar y analizar los resultados. (implementándose) 
 - Explorar la relación entre los indicadores climatológicos, las sequías, los incendios y factores de variabilidad climática como ENSO.
 
 Estas funcionalidades se encuentran pendientes de implementación.
